@@ -7,13 +7,77 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <wiringPi.h>
+#include <stdint.h>
 
 
 #define DIRECTION_MAX 45
 #define BUFFER_MAX 128
 #define VALUE_MAX 256
 
+#define MAXTIMINGS 83
+#define DHTPIN 7
+
 double target_degree;    
+
+int dht11_dat[5] = {
+    0,
+};
+
+double read_dht11_dat()
+{
+    uint8_t laststate = HIGH;
+    uint8_t counter = 0;
+    uint8_t j = 0, i;
+    uint8_t flag = HIGH;
+    uint8_t state = 0;
+    double degree;
+
+    dht11_dat[0] = dht11_dat[1] = dht11_dat[2] = dht11_dat[3] = dht11_dat[4] = 0;
+    pinMode(DHTPIN, OUTPUT);
+    digitalWrite(DHTPIN, LOW);
+    delay(18);
+    digitalWrite(DHTPIN, HIGH);
+    delayMicroseconds(30);
+    pinMode(DHTPIN, INPUT);
+
+    for (i = 0; i < MAXTIMINGS; i++)
+    {
+        counter = 0;
+        while (digitalRead(DHTPIN) == laststate)
+        {
+            counter++;
+            delayMicroseconds(1);
+            if (counter == 200)
+                break;
+        }
+        laststate = digitalRead(DHTPIN);
+
+        if (counter == 200)
+            break; // if while breaked by timer, break for
+
+        if ((i >= 4) && (i % 2 == 0))
+        {
+            dht11_dat[j / 8] <<= 1;
+
+            if (counter > 50)
+                dht11_dat[j / 8] |= 1;
+
+            j++;
+        }
+    }
+    if ((j >= 40) && (dht11_dat[4] == ((dht11_dat[0] + dht11_dat[1] + dht11_dat[2] + dht11_dat[3]) & 0xff)))
+    {
+        // printf("humidity = %d.%d %% Temperature = %d.%d *C \n", dht11_dat[0], dht11_dat[1], dht11_dat[2], dht11_dat[3]);
+        double n=(double)dht11_dat[3];
+        while (n >= 1.0)
+            n = n * 0.1;
+        degree=dht11_dat[2]+n;
+        return degree;
+    }
+    else
+        printf("Data get failed\n");
+}
 
 void error_handling(char *message)
 {
@@ -53,7 +117,8 @@ void *send(void* serv_sock)
     
     while (1)
     {
-        sprintf(msg, "%d", degree);
+        degree=read_dht11_dat();
+        sprintf(msg, "%.1f", degree);
         write(sock, msg, sizeof(msg));
         usleep(500 * 100);
     }
