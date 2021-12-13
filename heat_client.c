@@ -157,20 +157,17 @@ void *receive_degree(void* serv_sock)
 
 void *heating()
 {
-    if (wiringPiSetup() == -1)
-        exit(1);
-
     pinMode(POUT,OUTPUT);
     while(1)
     {
         if(current_degree<=target_degree)
         {
-            printf("on\n");
+            // printf("on\n");
             digitalWrite(POUT, HIGH);
         }
         else
         {
-            printf("off\n");
+            // printf("off\n");
             digitalWrite(POUT, LOW);
         }
     }
@@ -182,7 +179,7 @@ void *heating()
 
 int main(int argc, char *argv[])
 {
-    int port=8888;
+    int port=9999;
     int sock;
     char msg[BUFFER_MAX];
     
@@ -195,6 +192,10 @@ int main(int argc, char *argv[])
         printf("Usage : %s <IP>\n", argv[0]);
         exit(1);
     }
+
+    if (wiringPiSetup() == -1)
+        exit(1);
+
 
     sock = create_sock(argv[1],port);
 
