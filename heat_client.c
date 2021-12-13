@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <wiringPi.h>
 #include <stdint.h>
+#include <pthread.h>
 
 
 #define DIRECTION_MAX 45
@@ -89,7 +90,7 @@ void error_handling(char *message)
     exit(1);
 }
 
-int create_sock(const int addr,const int port)
+int create_sock(const char* addr,const int port)
 {
     int sock;
     struct sockaddr_in serv_addr;
@@ -104,7 +105,7 @@ int create_sock(const int addr,const int port)
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = inet_addr(addr);
-    serv_addr.sin_port = htons(atoi(port));
+    serv_addr.sin_port = htons(port);
 
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1)
         error_handling("connect() error");
@@ -112,7 +113,7 @@ int create_sock(const int addr,const int port)
     return sock;
 }
 
-void *send(void* serv_sock)
+void *send_degree(void* serv_sock)
 {
     int sock=*((int *)serv_sock);
     double degree;
@@ -132,7 +133,7 @@ void *send(void* serv_sock)
 }
 
 
-void *receive(void* serv_sock)
+void *receive_degree(void* serv_sock)
 {
     int sock=*((int *)serv_sock);
     int str_len;
@@ -199,13 +200,13 @@ int main(int argc, char *argv[])
 
 
 
-    thr_id=pthread_create(&p_thread[0],NULL, send,(void*)&sock);
+    thr_id=pthread_create(&p_thread[0],NULL, send_degree,(void*)&sock);
     if(thr_id<0)
     {
         perror("thread create error : ");
         exit(0);
     }
-    thr_id=pthread_create(&p_thread[1], NULL, receive, (void*)&sock);
+    thr_id=pthread_create(&p_thread[1], NULL, receive_degree, (void*)&sock);
     if(thr_id<0)
     {
         perror("thread create error : ");
