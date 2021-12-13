@@ -18,7 +18,10 @@
 #define MAXTIMINGS 83
 #define DHTPIN 7
 
-double target_degree;    
+#define POUT 0
+
+double target_degree=0;  
+double current_degree=0;  
 
 int dht11_dat[5] = {
     0,
@@ -150,13 +153,39 @@ void *receive(void* serv_sock)
     return (0);
 }
 
+
+void *heating()
+{
+    if (wiringPiSetup() == -1)
+        exit(1);
+
+    pinMode(POUT,OUTPUT);
+    while(1)
+    {
+        if(current_degree<=target_degree)
+        {
+            printf("on\n");
+            digitalWrite(POUT, HIGH);
+        }
+        else
+        {
+            printf("off\n");
+            digitalWrite(POUT, LOW);
+        }
+    }
+
+    return 0;
+}
+
+
+
 int main(int argc, char *argv[])
 {
     int port=8888;
     int sock;
     char msg[BUFFER_MAX];
     
-    pthread_t p_thread[2];
+    pthread_t p_thread[3];
     int thr_id;
     int status;
 
@@ -182,9 +211,16 @@ int main(int argc, char *argv[])
         perror("thread create error : ");
         exit(0);
     }
+    thr_id=pthread_create(&p_thread[2], NULL, heating, NULL);
+    if(thr_id<0)
+    {
+        perror("thread create error : ");
+        exit(0);
+    }
 
     pthread_join(p_thread[0], (void **)&status);
     pthread_join(p_thread[1], (void **)&status);
+    pthread_join(p_thread[2], (void **)&status);
 
     return 0;
 }
