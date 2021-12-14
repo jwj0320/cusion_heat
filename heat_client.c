@@ -1,3 +1,4 @@
+// gcc -o heat_client heat_client.c -lwiringPi -lpthread
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -74,13 +75,14 @@ double read_dht11_dat()
     {
         // printf("humidity = %d.%d %% Temperature = %d.%d *C \n", dht11_dat[0], dht11_dat[1], dht11_dat[2], dht11_dat[3]);
         double n=(double)dht11_dat[3];
-        while (n >= 1.0)
+        while (n >= 10)
             n = n * 0.1;
         degree=dht11_dat[2]+n;
         return degree;
     }
     else
         printf("Data get failed\n");
+        return 444; //error
 }
 
 void error_handling(char *message)
@@ -117,14 +119,27 @@ void *send_degree(void* serv_sock)
 {
     int sock=*((int *)serv_sock);
     double degree;
-    char msg[BUFFER_MAX];
+    char msg[BUFFER_MAX]={0};
     
     while (1)
     {
+        // //for test
+        // degree=25.1f;
+        // if (degree < 400)
+        // {
+        //     sprintf(msg, "%.1f", degree);
+        //     printf("temperature: %s\n",msg);
+        //     write(sock, msg, sizeof(msg));
+        // }
+
         degree=read_dht11_dat();
-        sprintf(msg, "%.1f", degree);
-        write(sock, msg, sizeof(msg));
-        usleep(500 * 100);
+        if (degree < 400)
+        {
+            sprintf(msg, "%.1f", degree);
+            write(sock, msg, sizeof(msg));
+        }
+
+        usleep(200 * 10000); 
     }
 
     close(sock);
