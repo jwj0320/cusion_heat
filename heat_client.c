@@ -154,11 +154,12 @@ void *receive_degree(void* serv_sock)
     int str_len;
     char msg[BUFFER_MAX];
     
-
+    printf("receive degree\n");
     while (1)
     {
         str_len=read(sock, msg, sizeof(msg));
         target_degree=atof(msg);
+        printf("target_degree: %.f\n",target_degree);
         if (str_len == -1)
             error_handling("read() error");
         usleep(500 * 100);
